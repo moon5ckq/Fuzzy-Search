@@ -7,11 +7,16 @@
 #pragma once
 #include <vector>
 #include <utility>
+#include <map>
+#include <string>
 using std::vector;
 using std::pair;
+using std::map;
+using std::string;
 
 const int SUCCESS = 1;
-const int FAILURE = 0; 
+const int FAILURE = 0;
+const int MAX_STRING_SIZE = 260;
 
 class FZ_Indexer {
 public:
@@ -28,6 +33,14 @@ public:
 
 	bool SearchJaccard(const char *query, double threshold, vector< pair<unsigned, double> > &results);
 
+	vector<string> pattern;
+
 private:
-  char * dataFilename;
+	
+	int f[MAX_STRING_SIZE][MAX_STRING_SIZE];
+
+	map<string, vector<int> > hash;
+	vector<int> count;
+	int calcEditDis(const string& a, const string& b);
+	int q, n;
 }; 

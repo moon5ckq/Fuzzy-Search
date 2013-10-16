@@ -1,7 +1,7 @@
 AllObjects = FuzzySearch.o FZ_indexer.o
 
 CC = g++-mp-4.8
-CPPFLAGS = -Wall -O3
+CPPFLAGS = -O2
 LDFLAGS = #-lrt
 
 FuzzySearch : $(AllObjects)
@@ -13,6 +13,9 @@ FuzzySearch.o : main.cc FZ_indexer.o
 FZ_indexer.o : FZ_indexer.cc FZ_indexer.h
 	$(CC) -c -o $@ $(CPPFLAGS) $<
 
-.PHONY: clean
+.PHONY: clean run
 clean :
 	rm *.o FuzzySearch
+
+run : FuzzySearch
+	./FuzzySearch
