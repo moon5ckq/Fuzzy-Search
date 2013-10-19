@@ -1,7 +1,7 @@
 AllObjects = FuzzySearch.o FZ_indexer.o
 
 CC = g++-mp-4.8
-CPPFLAGS = -O2
+CPPFLAGS = -O3
 LDFLAGS = #-lrt
 
 FuzzySearch : $(AllObjects)
