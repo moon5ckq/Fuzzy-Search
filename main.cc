@@ -9,7 +9,7 @@ int main() {
 
 	char dataFilename[]="dblp_sample_data.txt"; //"author.data";
 	char indexFilename[]="my.index";
-	unsigned q=3;
+	unsigned q=7;
 	unsigned tau=4;
 	double tauj = 0.501;
 
@@ -20,15 +20,15 @@ int main() {
 	char s[260];
 	while (fgets(s, 256, stdin)) {
 		while (s[strlen(s) - 1] < ' ') s[strlen(s) - 1] = '\0';
-		//indexer.SearchED(s, tau, resultsED);
-		indexer.SearchJaccard(s, tauj, resultsJac);
-		for (unsigned i = 0; i < resultsJac.size(); ++i)
-			printf("%u %lf\n", resultsJac[i].first, resultsJac[i].second);
-		//for (unsigned i = 0; i < resultsED.size(); i++) {
-		//	unsigned id = resultsED[i].first;
-		//	unsigned ed = resultsED[i].second;
-		//	printf("%s %u\n", indexer.pattern[id].c_str(), ed);
-		//}
+		indexer.SearchED(s, tau, resultsED);
+		//indexer.SearchJaccard(s, tauj, resultsJac);
+		//for (unsigned i = 0; i < resultsJac.size(); ++i)
+		//	printf("%u %lf\n", resultsJac[i].first, resultsJac[i].second);
+		for (unsigned i = 0; i < resultsED.size(); i++) {
+			unsigned id = resultsED[i].first;
+			unsigned ed = resultsED[i].second;
+			printf("%s %u\n", indexer.pattern[id].c_str(), ed);
+		}
 		resultsJac.clear();
 		resultsED.clear();
 	}

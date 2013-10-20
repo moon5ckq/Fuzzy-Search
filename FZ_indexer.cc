@@ -31,9 +31,10 @@ bool FZ_Indexer::CreateIndex(
 		
 		//Edit Distance
 		pattern.push_back(string(data, len));
-		for (int i = 0; i <= len - q; ++i) {
+		for (int i = 0; i <= len - (int)q; ++i) {
 			hash[string(data + i, q)].push_back(n);
 		}
+		if (len < q) hash[string(data, len)].push_back(n);
 
 		//Jaccard
 		int c = 0;
@@ -53,6 +54,8 @@ bool FZ_Indexer::CreateIndex(
 		++n;
 	}
 	count.resize(n);
+
+	fclose(fin);
 
 	//debug("%d %u\n", n, hash.size());
 
@@ -98,6 +101,7 @@ bool FZ_Indexer::SearchED(
 	for (int i = 0; i <= len - q; ++i)
 		if (hash.count(string(query + i, q)))
 			grams[string(query + i, q)] ++;
+	if (len < q) grams[string(data, len)] ++;
 	
 	//debug("%d ", clock() - curr);
 	//curr = clock();
