@@ -34,13 +34,19 @@ public:
 	bool SearchJaccard(const char *query, double threshold, vector< pair<unsigned, double> > &results);
 
 	vector<string> pattern;
+	vector<int> patternCounts;
 
 private:
 	
-	int f[MAX_STRING_SIZE][MAX_STRING_SIZE];
+	//int f[MAX_STRING_SIZE][MAX_STRING_SIZE];
+	int f[MAX_STRING_SIZE];
+	int g[MAX_STRING_SIZE];
 
 	map<string, vector<int> > hash;
+	map<string, vector<int> > hashStr;
 	vector<int> count;
-	int calcEditDis(const string& a, const string& b);
+	int calcEditDis(const string& a, const string& b, int threshold);
 	int q, n;
+
+	char data[MAX_STRING_SIZE * 40];
 }; 

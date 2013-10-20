@@ -3,8 +3,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
+#include <ctime>
 #include <algorithm>
 
+//#define debug(format, ...) 
 #define debug(format, ...) printf((format), ##__VA_ARGS__)
 
 /*
@@ -22,19 +25,36 @@ bool FZ_Indexer::CreateIndex(
 	FILE *fin = fopen(dataFilename, "r");
 	if (fin == NULL) return FAILURE;
 	
-	char data[260];
-	while (fgets(data, 256, fin)) {
+	while (fgets(data, 10000, fin)) {
 		int len = strlen(data);
 		while (data[len - 1] < ' ') --len;
+		
+		//Edit Distance
 		pattern.push_back(string(data, len));
 		for (int i = 0; i <= len - q; ++i) {
 			hash[string(data + i, q)].push_back(n);
 		}
+
+		//Jaccard
+		int c = 0;
+		//patterns.push_back(vector<string>());
+		for (int i = 0, p = 0; i <= len; ++i)
+			if (i == len || data[i] == ' ') {
+				if (p != i) {
+					string str(data + p, i - p);
+					hashStr[str].push_back(n);
+					//patterns[n].push_back(str);
+					c++;
+				}
+				p = i + 1;
+			}
+		patternCounts.push_back(c);
+
 		++n;
 	}
 	count.resize(n);
 
-	debug("%d %u\n", n, hash.size());
+	//debug("%d %u\n", n, hash.size());
 
 	return SUCCESS;
 }
@@ -69,6 +89,8 @@ bool FZ_Indexer::SearchED(
 	const char *query, unsigned threshold,
 	vector< pair<unsigned, unsigned> > &results) {
 
+	//int curr = clock();
+
 	string qstr(query);
 	int len = strlen(query);
 	memset(&count[0], 0, sizeof(int) * count.size());
@@ -76,30 +98,41 @@ bool FZ_Indexer::SearchED(
 	for (int i = 0; i <= len - q; ++i)
 		if (hash.count(string(query + i, q)))
 			grams[string(query + i, q)] ++;
+	
+	//debug("%d ", clock() - curr);
+	//curr = clock();
 
 	for (map<string, int>::iterator i = grams.begin(); i != grams.end(); ++i) {
-		vector<int>& list = hash[i->first];
+		const int *list = &hash[i->first][0];
+		//vector<int>& list = hash[i->first];
+		int n = hash[i->first].size();
 		int pre = -1, c = i->second;
-		for (unsigned j = 0; j < list.size(); ++j) {
+		for (int j = 0; j < n; ++j) {
 			if (pre != list[j]) {
 				pre = list[j];
 				c = i->second;
 			}
 			if (c) {
-				count[list[j]] ++;
+				count[pre] ++;
 				c--;
 			}
 		}
 	}
-
+	//debug("%d ", clock() - curr);
+	//curr = clock();
+	//int p = 0;
+	int tmp = 1 - q - static_cast<int>(threshold) * q;
+	int tmp2 = tmp + len;
 	for (int i = 0; i < n; ++i)
-		if (count[i] >=
-			std::max<int>(len, pattern[i].size()) - q + 1 - threshold * q) {
-			int dis = calcEditDis(qstr, pattern[i]);
+		if (count[i] >= tmp2 &&
+			count[i] >= static_cast<int>(pattern[i].size()) + tmp) {
+			//++p;
+			int dis = calcEditDis(qstr, pattern[i], threshold);
 			if (dis <= threshold) {
 				results.push_back(std::make_pair<unsigned, unsigned>(i, dis));
 			}
 		}
+	//debug("%d %d\n", clock() - curr, p);
 
 	return SUCCESS;
 }
@@ -117,23 +150,57 @@ bool FZ_Indexer::SearchED(
 bool FZ_Indexer::SearchJaccard(
 	const char *query, double threshold,
 	vector< pair<unsigned, double> > &results) {
+
+	int len = strlen(query), c = 0;
+	memset(&count[0], 0, sizeof(int) * count.size());
+
+	for (int i = 0, p = 0; i <= len; ++i)
+		if (i == len || query[i] == ' ') {
+			if (i != p) {
+				string str(query + p, i - p);
+				const int *list = &hashStr[str][0];
+				int m = hashStr[str].size();
+				for (int j = 0; j < m; ++j)
+					count[list[j]] ++;
+				c++;
+			}
+			p = i + 1;
+		}
+	//debug("%d\n", n);
+	
+	int tmp = static_cast<int>(ceil(threshold * c));
+	for (int i = 0; i < n; ++i) {
+		if (count[i] >= tmp) {
+			double j = count[i] /
+				static_cast<double>(patternCounts[i] + c - count[i]);
+			if (j >= threshold)
+				results.push_back(std::make_pair<unsigned, double>(i, j));
+		}
+	}
+
 	return SUCCESS;
 }
 
-int FZ_Indexer::calcEditDis(const string& a, const string& b) {
-	memset(f, 0, sizeof f);
+int FZ_Indexer::calcEditDis(const string& a, const string& b, int threshold) {
 	int n = a.size(), m = b.size();
+	//if (a == b) return 0;
+	if (std::abs(n - m) > threshold) return threshold + 1;
 	const char *x = &a[0] - 1, *y = &b[0] - 1;
-	for (int i = 0; i <= n; ++i)
-		f[i][0] = i;
-	for (int j = 0; j <= m; ++j)
-		f[0][j] = j;
-	for (int i = 1; i <= n; ++i)
+	for (int i = 0; i <= m; ++i)
+		f[i] = i;
+	int *p = f, *q = g;
+	for (int i = 1; i <= n; ++i) {
+		bool flag = true;
+		q[0] = i;
 		for (int j = 1; j <= m; ++j) {
-			f[i][j] = f[i-1][j] + 1;
-			if (f[i][j] > f[i][j-1] + 1) f[i][j] = f[i][j-1] + 1;
-			if (f[i][j] > f[i-1][j-1] + (x[i] != y[j]))
-				f[i][j] = f[i-1][j-1] + (x[i] != y[j]);
+			if (p[j] > q[j-1]) q[j] = q[j-1] + 1;
+			else q[j] = p[j] + 1;
+			if (q[j] > p[j-1] + (x[i] != y[j]))
+				q[j] = p[j-1] + (x[i] != y[j]);
+			flag &= q[j] > threshold;
 		}
-	return f[n][m];
+		if (flag) return threshold + 1;
+		std::swap(p, q);
+	}
+	return p[m];
 }
